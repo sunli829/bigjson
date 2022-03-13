@@ -1,0 +1,11 @@
+[package]
+name = "jsondb-memdb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+json-pointer = { path = "../json-pointer", package = "jsondb-json-pointer" }
+json-patch = { path = "../json-patch", package = "jsondb-json-patch" }
+
+thiserror = "1.0.30"
+serde_json = "1.0.79"

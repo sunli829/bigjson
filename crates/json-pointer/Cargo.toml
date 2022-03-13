@@ -1,0 +1,10 @@
+[package]
+name = "jsondb-json-pointer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+memchr = "2.4.1"
+thiserror = "1.0.30"
+serde_json = "1.0.79"
+serde = { version = "1.0.136", features = ["derive"] }

@@ -1,0 +1,20 @@
+[package]
+name = "jsondb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+server = { path = "./crates/server", package = "jsondb-server" }
+
+tokio = { version = "1.17.0", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1.32"
+tracing-subscriber = { version = "0.3.9", features = ["env-filter"] }
+
+[workspace]
+members = [
+    "crates/json-pointer",
+    "crates/json-patch",
+    "crates/memdb",
+    "crates/persistentdb",
+    "crates/server",
+]
