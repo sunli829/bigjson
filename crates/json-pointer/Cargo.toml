@@ -1,5 +1,5 @@
 [package]
-name = "jsondb-json-pointer"
+name = "bigjson-json-pointer"
 version = "0.1.0"
 edition = "2021"
 

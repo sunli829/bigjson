@@ -1,12 +1,12 @@
 [package]
 edition = "2021"
-name = "jsondb-persistentdb"
+name = "bigjson-persistentdb"
 version = "0.1.0"
 
 [dependencies]
-json-pointer = { path = "../json-pointer", package = "jsondb-json-pointer" }
-json-patch = { path = "../json-patch", package = "jsondb-json-patch" }
-memdb = { path = "../memdb", package = "jsondb-memdb" }
+json-pointer = { path = "../json-pointer", package = "bigjson-json-pointer" }
+json-patch = { path = "../json-patch", package = "bigjson-json-patch" }
+memdb = { path = "../memdb", package = "bigjson-memdb" }
 
 thiserror = "1.0.30"
 serde_json = { version = "1.0.79", features = ["std"] }

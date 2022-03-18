@@ -17,7 +17,7 @@ use tokio_stream::StreamExt;
 use crate::{state::State, utils::normalize_path};
 
 #[handler]
-pub(crate) async fn handler_subscribe(state: Data<&State>, path: Path<String>) -> Result<SSE> {
+pub(crate) async fn handler_sse(state: Data<&State>, path: Path<String>) -> Result<SSE> {
     let path = normalize_path(&path);
     tracing::debug!(path = path.as_str(), "subscribe");
 

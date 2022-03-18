@@ -146,7 +146,7 @@ fn create_patch_move(
         | (TargetPath::OtherBranch, TargetPath::Parent(_)) => {
             output.push(JsonPatch::Add {
                 path: JsonPointer::root(),
-                value: mdb.get(subscription_path).cloned().unwrap_or(Value::Null),
+                value: mdb.get(subscription_path).cloned().unwrap_or_default(),
             });
         }
         (TargetPath::Parent(_), TargetPath::OtherBranch) => {
@@ -194,14 +194,14 @@ fn create_patch_copy(
         | (TargetPath::OtherBranch, TargetPath::Parent(_)) => {
             output.push(JsonPatch::Add {
                 path: JsonPointer::root(),
-                value: mdb.get(subscription_path).cloned().unwrap_or(Value::Null),
+                value: mdb.get(subscription_path).cloned().unwrap_or_default(),
             });
         }
         (TargetPath::OtherBranch, TargetPath::Child(rel_path_to))
         | (TargetPath::Parent(_), TargetPath::Child(rel_path_to)) => {
             output.push(JsonPatch::Add {
                 path: rel_path_to.to_owned(),
-                value: mdb.get(path).cloned().unwrap_or(Value::Null),
+                value: mdb.get(path).cloned().unwrap_or_default(),
             });
         }
         (TargetPath::Parent(_), TargetPath::OtherBranch)

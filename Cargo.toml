@@ -1,10 +1,10 @@
 [package]
-name = "jsondb"
+name = "bigjson"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-server = { path = "./crates/server", package = "jsondb-server" }
+server = { path = "./crates/server", package = "bigjson-server" }
 
 tokio = { version = "1.17.0", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.32"

@@ -1,10 +1,10 @@
 [package]
-name = "jsondb-json-patch"
+name = "bigjson-json-patch"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-json-pointer = { path = "../json-pointer", package = "jsondb-json-pointer" }
+json-pointer = { path = "../json-pointer", package = "bigjson-json-pointer" }
 
 serde_json = "1.0.79"
 serde = { version = "1.0.136", features = ["derive"] }

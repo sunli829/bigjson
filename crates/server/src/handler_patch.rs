@@ -20,19 +20,24 @@ pub(crate) async fn handler_patch(
 
     let prefix = prefix.parse::<JsonPointer>().map_err(BadRequest)?;
     let mut locked_state = state.locked_state.write();
+    let prefix = if !prefix.as_ref().is_empty() {
+        Some(prefix)
+    } else {
+        None
+    };
 
     locked_state
         .mdb
-        .patch(Some(&prefix), patch.0.clone())
+        .patch(prefix.as_ref(), patch.0.clone())
         .map_err(BadRequest)?;
     publish(
         &locked_state.mdb,
         &locked_state.subscriptions,
-        Some(&prefix),
+        prefix.as_ref(),
         &patch,
     );
     if let Some(patch_sender) = &state.patch_sender {
-        let _ = patch_sender.send((Some(prefix), patch.0));
+        let _ = patch_sender.send((prefix, patch.0));
     }
     Ok(())
 }
