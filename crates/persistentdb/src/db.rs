@@ -64,7 +64,12 @@ impl PersistentDb {
 
         let new_index = match &mut self.active_block {
             Some((index, block)) => match block.append(record) {
-                Ok(()) => return Ok(()),
+                Ok(()) => {
+                    if flush {
+                        block.flush()?;
+                    }
+                    return Ok(());
+                }
                 Err(PersistentDbError::BlockFileIsFull) => {
                     // create a new block file
                     *index + 1
@@ -76,14 +81,10 @@ impl PersistentDb {
 
         let mut block_file = ActiveBlockFile::open(self.path.join(format!("{}.block", new_index)))?;
         block_file.append(record)?;
-        self.active_block = Some((new_index, block_file));
-
         if flush {
-            if let Some((_, block_file)) = &mut self.active_block {
-                block_file.flush()?;
-            }
+            block_file.flush()?;
         }
-
+        self.active_block = Some((new_index, block_file));
         Ok(())
     }
 

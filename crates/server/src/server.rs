@@ -19,12 +19,13 @@ use poem::{
     EndpointExt, Route, Server,
 };
 
+use crate::handler_ws::handler_ws;
 use crate::{
     handler_delete::handler_delete,
     handler_get::handler_get,
     handler_patch::handler_patch,
     handler_post::handler_post,
-    handler_subscribe::handler_subscribe,
+    handler_sse::handler_sse,
     state::{LockedState, State},
     ServerConfig,
 };
@@ -55,7 +56,8 @@ pub fn create_server(
                     .delete(handler_delete),
             ),
         )
-        .nest("/subscribe", Route::new().at("/*path", handler_subscribe))
+        .nest("/sse", Route::new().at("/*path", handler_sse))
+        .at("/ws", get(handler_ws))
         .at("/health", get(make_sync(|_| "OK")))
         .with(NormalizePath::new(TrailingSlash::Trim))
         .data(State {
