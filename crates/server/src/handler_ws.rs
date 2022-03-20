@@ -23,18 +23,18 @@ use crate::{state::State, subscription_patch::publish};
 #[serde(tag = "type", rename_all = "lowercase")]
 enum ClientRequest {
     Subscribe {
-        id: String,
+        id: i64,
         path: JsonPointer,
     },
     Unsubscribe {
-        id: String,
+        id: i64,
     },
     Get {
-        id: String,
+        id: i64,
         path: JsonPointer,
     },
     Patch {
-        id: String,
+        id: i64,
         prefix: Option<JsonPointer>,
         patch: Vec<JsonPatch>,
     },
@@ -44,28 +44,31 @@ enum ClientRequest {
 #[serde(tag = "type", rename_all = "lowercase")]
 enum ServerResponse<'a> {
     Patch {
-        id: &'a str,
-        patch: &'a [JsonPatch],
+        id: i64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        value: Option<&'a Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        patch: Option<&'a [JsonPatch]>,
     },
     Complete {
-        id: &'a str,
+        id: i64,
     },
     Response {
-        id: &'a str,
+        id: i64,
         #[serde(skip_serializing_if = "Option::is_none")]
         value: Option<&'a Value>,
     },
     Error {
-        id: &'a str,
+        id: i64,
         message: &'a str,
     },
 }
 
-type PatchSender = UnboundedSender<Result<(Arc<str>, Arc<[JsonPatch]>), BroadcastRecvError>>;
+type PatchSender = UnboundedSender<Result<(i64, Arc<[JsonPatch]>), BroadcastRecvError>>;
 
 struct ClientState {
     state: State,
-    subscriptions: HashMap<Arc<str>, oneshot::Sender<()>>,
+    subscriptions: HashMap<i64, oneshot::Sender<()>>,
     sink: SplitSink<WebSocketStream, Message>,
     patch_tx: PatchSender,
 }
@@ -114,8 +117,9 @@ pub(crate) async fn handler_ws(state: Data<&State>, ws: WebSocket) -> impl IntoR
                                 if send_response(
                                     &mut client_state.sink,
                                     ServerResponse::Patch {
-                                        id: &id,
-                                        patch: &patch,
+                                        id,
+                                        value:None,
+                                        patch: Some(&patch),
                                     },
                                 )
                                 .await.is_err() {
@@ -152,14 +156,14 @@ async fn send_response<T: Sink<Message> + Unpin>(
 
 async fn handle_client_request_subscribe(
     client_state: &mut ClientState,
-    id: String,
+    id: i64,
     path: JsonPointer,
 ) {
-    if client_state.subscriptions.contains_key(&*id) {
+    if client_state.subscriptions.contains_key(&id) {
         let _ = send_response(
             &mut client_state.sink,
             ServerResponse::Error {
-                id: &id,
+                id,
                 message: &format!("duplicate operation id: '{}'", id),
             },
         )
@@ -180,19 +184,16 @@ async fn handle_client_request_subscribe(
             .subscribe();
         let patch_tx = client_state.patch_tx.clone();
         let (cancel_tx, cancel_rx) = oneshot::channel();
-        let id: Arc<str> = id.into();
         (id, value, receiver, patch_tx, cancel_tx, cancel_rx)
     };
 
-    client_state.subscriptions.insert(id.clone(), cancel_tx);
+    client_state.subscriptions.insert(id, cancel_tx);
     let _ = send_response(
         &mut client_state.sink,
         ServerResponse::Patch {
-            id: &id,
-            patch: &[JsonPatch::Add {
-                path: JsonPointer::root(),
-                value,
-            }],
+            id,
+            value: Some(&value),
+            patch: None,
         },
     )
     .await;
@@ -201,7 +202,7 @@ async fn handle_client_request_subscribe(
         loop {
             tokio::select! {
                 res = receiver.recv() => {
-                    if patch_tx.send(res.map(|patch| (id.clone(), patch))).is_err() {
+                    if patch_tx.send(res.map(|patch| (id, patch))).is_err() {
                         break;
                     }
                 }
@@ -211,14 +212,14 @@ async fn handle_client_request_subscribe(
     });
 }
 
-async fn handle_client_request_unsubscribe(client_state: &mut ClientState, id: String) {
-    let cancel_tx = match client_state.subscriptions.remove(&*id) {
+async fn handle_client_request_unsubscribe(client_state: &mut ClientState, id: i64) {
+    let cancel_tx = match client_state.subscriptions.remove(&id) {
         Some(cancel_tx) => cancel_tx,
         None => {
             let _ = send_response(
                 &mut client_state.sink,
                 ServerResponse::Error {
-                    id: &id,
+                    id,
                     message: &format!("operation id does not exists: '{}'", id),
                 },
             )
@@ -228,19 +229,19 @@ async fn handle_client_request_unsubscribe(client_state: &mut ClientState, id: S
     };
 
     let _ = cancel_tx.send(());
-    let _ = send_response(&mut client_state.sink, ServerResponse::Complete { id: &id }).await;
+    let _ = send_response(&mut client_state.sink, ServerResponse::Complete { id }).await;
 }
 
-async fn handle_client_request_get(client_state: &mut ClientState, id: String, path: JsonPointer) {
+async fn handle_client_request_get(client_state: &mut ClientState, id: i64, path: JsonPointer) {
     let value = {
         let locked_state = client_state.state.locked_state.read();
-        locked_state.mdb.get(path).cloned().unwrap_or_default()
+        locked_state.mdb.get(path).cloned()
     };
     let _ = send_response(
         &mut client_state.sink,
         ServerResponse::Response {
-            id: &id,
-            value: Some(&value),
+            id,
+            value: value.as_ref(),
         },
     )
     .await;
@@ -248,7 +249,7 @@ async fn handle_client_request_get(client_state: &mut ClientState, id: String, p
 
 async fn handle_client_request_patch(
     client_state: &mut ClientState,
-    id: String,
+    id: i64,
     prefix: Option<JsonPointer>,
     patch: Vec<JsonPatch>,
 ) {
@@ -275,10 +276,7 @@ async fn handle_client_request_patch(
         Ok(()) => {
             let _ = send_response(
                 &mut client_state.sink,
-                ServerResponse::Response {
-                    id: &id,
-                    value: None,
-                },
+                ServerResponse::Response { id, value: None },
             )
             .await;
         }
@@ -286,7 +284,7 @@ async fn handle_client_request_patch(
             let _ = send_response(
                 &mut client_state.sink,
                 ServerResponse::Error {
-                    id: &id,
+                    id,
                     message: &err.to_string(),
                 },
             )

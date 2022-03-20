@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use json_patch::JsonPatch;
 use json_pointer::JsonPointer;
 use poem::{
     error::BadRequest,
@@ -34,16 +31,14 @@ pub(crate) async fn handler_sse(state: Data<&State>, path: Path<String>) -> Resu
         })
         .subscribe();
 
-    let first_patch: Arc<[JsonPatch]> = vec![JsonPatch::Add {
-        path: JsonPointer::root(),
-        value,
-    }]
-    .into();
-    let stream = tokio_stream::once(Ok(first_patch))
-        .chain(tokio_stream::wrappers::BroadcastStream::new(receiver))
-        .take_while(|res| res.is_ok())
-        .map(Result::unwrap)
-        .map(|patch| Event::message(serde_json::to_string(&*patch).unwrap()).event_type("patch"));
-
+    let first_item = Event::message(serde_json::to_string(&value).unwrap()).event_type("value");
+    let stream = tokio_stream::once(first_item).chain(
+        tokio_stream::wrappers::BroadcastStream::new(receiver)
+            .take_while(|res| res.is_ok())
+            .map(Result::unwrap)
+            .map(|patch| {
+                Event::message(serde_json::to_string(&*patch).unwrap()).event_type("patch")
+            }),
+    );
     Ok(SSE::new(stream))
 }

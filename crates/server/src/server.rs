@@ -24,6 +24,7 @@ use crate::{
     handler_get::handler_get,
     handler_patch::handler_patch,
     handler_post::handler_post,
+    handler_put::handler_put,
     handler_sse::handler_sse,
     handler_ws::handler_ws,
     state::{LockedState, State},
@@ -51,7 +52,7 @@ pub fn create_server(
                 "/*path",
                 get(handler_get)
                     .post(handler_post)
-                    .put(handler_post)
+                    .put(handler_put)
                     .patch(handler_patch)
                     .delete(handler_delete),
             ),

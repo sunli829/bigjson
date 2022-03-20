@@ -17,4 +17,5 @@ members = [
     "crates/memdb",
     "crates/persistentdb",
     "crates/server",
+    "crates/client",
 ]

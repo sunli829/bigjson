@@ -109,6 +109,30 @@ impl JsonPointer {
             path: &self.0,
         }
     }
+
+    pub fn split_last(&self) -> Option<(JsonPointerRef<'_>, &'_ str)> {
+        self.as_ref().split_last()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn starts_with(&self, needle: JsonPointerRef<'_>) -> bool {
+        self.as_ref().starts_with(needle)
+    }
+
+    pub fn strip_prefix(&self, prefix: JsonPointerRef<'_>) -> Option<JsonPointerRef<'_>> {
+        self.as_ref().strip_prefix(prefix)
+    }
 }
 
 #[cfg(test)]

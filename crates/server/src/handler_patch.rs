@@ -1,10 +1,12 @@
 use json_patch::JsonPatch;
 use json_pointer::JsonPointer;
+use memdb::MemDbError;
+use poem::http::StatusCode;
 use poem::{
     error::BadRequest,
     handler,
     web::{Data, Json, Path},
-    Result,
+    Response, Result,
 };
 
 use crate::{state::State, subscription_patch::publish, utils::normalize_path};
@@ -14,7 +16,7 @@ pub(crate) async fn handler_patch(
     state: Data<&State>,
     prefix: Path<String>,
     mut patch: Json<Vec<JsonPatch>>,
-) -> Result<()> {
+) -> Result<Response> {
     let prefix = normalize_path(&prefix);
     tracing::debug!(prefix = prefix.as_str(), patch_count = patch.len(), "patch");
 
@@ -26,10 +28,12 @@ pub(crate) async fn handler_patch(
         None
     };
 
-    locked_state
-        .mdb
-        .patch(prefix.as_ref(), patch.0.clone())
-        .map_err(BadRequest)?;
+    match locked_state.mdb.patch(prefix.as_ref(), patch.0.clone()) {
+        Ok(()) => {}
+        Err(MemDbError::TestFailed) => return Ok(StatusCode::PRECONDITION_FAILED.into()),
+        Err(err) => return Err(BadRequest(err)),
+    };
+
     publish(
         &locked_state.mdb,
         &locked_state.subscriptions,
@@ -39,5 +43,5 @@ pub(crate) async fn handler_patch(
     if let Some(patch_sender) = &state.patch_sender {
         let _ = patch_sender.send((prefix, patch.0));
     }
-    Ok(())
+    Ok(().into())
 }

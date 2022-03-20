@@ -10,4 +10,6 @@ pub enum MemDbError {
     NotAContainer { path: JsonPointer },
     #[error("empty path")]
     EmptyPath,
+    #[error("test failed")]
+    TestFailed,
 }

@@ -24,4 +24,8 @@ pub enum JsonPatch {
         from: JsonPointer,
         path: JsonPointer,
     },
+    Test {
+        path: JsonPointer,
+        value: Value,
+    },
 }

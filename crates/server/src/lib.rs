@@ -3,6 +3,7 @@ mod handler_delete;
 mod handler_get;
 mod handler_patch;
 mod handler_post;
+mod handler_put;
 mod handler_sse;
 mod handler_ws;
 mod server;

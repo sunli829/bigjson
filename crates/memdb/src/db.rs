@@ -7,9 +7,17 @@ use crate::{
     MemDbError,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct MemDb {
     root: Value,
+}
+
+impl Default for MemDb {
+    fn default() -> Self {
+        Self {
+            root: Value::Object(Default::default()),
+        }
+    }
 }
 
 impl MemDb {
@@ -87,6 +95,9 @@ impl MemDb {
                 from.with_prefix_opt(prefix),
                 path.with_prefix_opt(prefix),
             ),
+            JsonPatch::Test { path, value } => {
+                self.patch_command_test(path.with_prefix_opt(prefix), value)
+            }
         }
     }
 
@@ -447,5 +458,17 @@ impl MemDb {
         }
 
         Ok(())
+    }
+
+    fn patch_command_test<'a>(
+        &mut self,
+        path: JsonPointerRef<'a>,
+        value: &Value,
+    ) -> Result<(), MemDbError> {
+        if self.root.locate(path).unwrap_or(&Value::Null) != value {
+            Err(MemDbError::TestFailed)
+        } else {
+            Ok(())
+        }
     }
 }

@@ -251,6 +251,7 @@ fn create_subscription_patch(
                 path.with_prefix_opt(prefix),
                 &mut new_patch_list,
             ),
+            JsonPatch::Test { .. } => {}
         }
     }
 
